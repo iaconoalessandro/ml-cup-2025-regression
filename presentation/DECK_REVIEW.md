@@ -44,7 +44,7 @@ notebook outputs, and the raw dataset.
 The deck is, on the whole, unusually well-sourced — nearly every number traces
 back to a committed CSV or a notebook output.
 
-### ❌ Errors found
+### ❌ Errors found (Items 1–5 FIXED in `EnSIUMble_ML_Project_2025.pptx`)
 
 **1. "A two-dimensional target" — slides 3 and 8. The target is 4-dimensional.**
 
