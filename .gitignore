@@ -1,10 +1,82 @@
-# Byte-compiled / optimized / DLL files
+# ==============================================================================
+# Python
+# ==============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
 
-# Jupyter Notebook checkpoints
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# ==============================================================================
+# Jupyter
+# ==============================================================================
 .ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+profile_default/
+ipython_config.py
 
-# macOS system files
+# ==============================================================================
+# Artefatti pesanti degli esperimenti
+# ------------------------------------------------------------------------------
+# Le learning curve di ogni configurazione (una PNG per config, migliaia di
+# file per run) sono rigenerabili con gridsearch_NN.py / gridsearch_NN2.py.
+# I CSV in regression/results/ sono invece VERSIONATI di proposito: sono il
+# log della model selection e il README ci si appoggia.
+# ==============================================================================
+regression/plots/
+classification/plots/
+*.pt
+*.pth
+*.ckpt
+*.joblib
+*.pkl
+checkpoints/
+
+# JSON completi delle grid search (contengono tutte le curve: molto pesanti,
+# ricostruibili rilanciando la grid). I CSV riassuntivi restano tracciati.
+regression/results/*.json
+
+# ==============================================================================
+# Sistema / editor
+# ==============================================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# ==============================================================================
+# Presentazioni
+# ------------------------------------------------------------------------------
+# Nel repository pubblico va SOLO la versione rifinita
+# (presentation/EnSIUMble_ML_Project_2025.pptx).
+# School.pptx e` il deck consegnato per il corso: resta sul disco come
+# archivio personale ma non viene pubblicato. NON cancellarlo dal disco:
+# e` l'unico che contiene la bibliografia completa e i metadati del corso.
+# ==============================================================================
+presentation/School.pptx
+
+# ==============================================================================
+# Segreti — nessuno presente oggi, ma la rete di sicurezza resta
+# ==============================================================================
+.env
+.env.*
+*.pem
+*.key
+secrets.*
+credentials.*

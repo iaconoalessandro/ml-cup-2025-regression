@@ -1,0 +1,24 @@
+# ML-CUP 2025 / MONK — dipendenze del progetto
+# Generato scandendo gli import di tutti gli .py e .ipynb del repository.
+# Versioni verificate su Python 3.13 (macOS, CPU-only).
+#
+#   python -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+#   python regression/run_pipeline.py
+
+# --- core scientifico ---
+numpy>=1.26,<3
+pandas>=2.0,<3
+scipy>=1.11
+
+# --- modelli ---
+scikit-learn>=1.4,<2
+torch>=2.2                # CPU-only e` sufficiente: nessun kernel CUDA richiesto
+
+# --- figure ---
+matplotlib>=3.8
+seaborn>=0.13
+
+# --- notebook (serve solo per aprire Cup_Summary.ipynb / Monks_Summary.ipynb) ---
+ipykernel>=6.29
+jupyterlab>=4.0
