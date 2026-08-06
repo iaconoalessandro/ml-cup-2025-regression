@@ -95,13 +95,17 @@ from cup_loader import MLCupLoader, seed_everything
 
 # Qui si configura la nostra griglia di esperimenti
 
-DATASET_PATH   = os.path.join('datasets', 'ML-CUP25-TR.csv')
+# Tutti i path sono ancorati alla directory di QUESTO file, non alla CWD:
+# lo script funziona identico da qualunque directory venga lanciato.
+BASE_DIR       = os.path.dirname(os.path.abspath(__file__))
+
+DATASET_PATH   = os.path.join(BASE_DIR, 'datasets', 'ML-CUP25-TR.csv')
 
 # Tag dell'esperimento (ogni run produce file separati)
 EXPERIMENT_TAG = 'second_grid'
 # Directory di output (stile nn_gridsearch.py)
-RESULTS_DIR    = 'results'
-PLOTS_DIR      = 'plots'
+RESULTS_DIR    = os.path.join(BASE_DIR, 'results')
+PLOTS_DIR      = os.path.join(BASE_DIR, 'plots')
 
 # -------- Protocollo (seed, K) --------
 GLOBAL_SEED    = 42
