@@ -1,0 +1,65 @@
+{
+  "mlp_config": {
+    "_label": "256x256x256_adamw_heavy",
+    "hidden_layers": [
+      256,
+      256,
+      256
+    ],
+    "activation": "gelu",
+    "optimizer": "adamw",
+    "lr": 0.02,
+    "weight_decay": 0.05,
+    "dropout": 0.0,
+    "batch_size": 32,
+    "input_noise": 0.0,
+    "loss_fn": "mse"
+  },
+  "knn_config": {
+    "n_neighbors": 3,
+    "weights": "distance",
+    "pca_components": 6
+  },
+  "svr_config": {
+    "kernel": "rbf",
+    "C": 3.0,
+    "gamma": 3,
+    "pca_components": 4
+  },
+  "seeds_mlp": [
+    42,
+    123,
+    456,
+    789,
+    2024
+  ],
+  "k_folds": 5,
+  "kf_seed": 42,
+  "ridge_alpha": 7.196856730011519,
+  "n_epochs_cv_median": 50,
+  "n_epochs_final": 69,
+  "train_mee": {
+    "mlp": 12.037192460812875,
+    "knn": 1.1838299616819922e-15,
+    "svr": 8.091903101757078,
+    "stacking": 6.393495274979264,
+    "uniform": 6.241208224265783
+  },
+  "oof_mee": {
+    "mlp": 19.013099332060374,
+    "knn": 15.106987670172302,
+    "svr": 15.596255691304489,
+    "uniform": 15.32994322409429,
+    "stacking_insample": 14.301891263087679,
+    "stacking_nested": 14.876582753539743
+  },
+  "test_mee": {
+    "mlp": 18.468159569219583,
+    "knn": 14.128388467074991,
+    "svr": 15.767498937346888,
+    "stacking": 14.700561319238613,
+    "uniform": 14.665865732729635
+  },
+  "best_base_learner_ts": 14.128388467074991,
+  "runtime_sec": 14.8
+}
