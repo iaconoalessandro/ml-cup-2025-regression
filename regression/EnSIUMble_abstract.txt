@@ -1,0 +1,6 @@
+Team: EnSIUMble (Francesco Bernardini Alessandro Iacono)
+Final model: Stacking ensemble of MLP + KNN + SVR with RidgeCV meta-learner.
+  - MLP: 256x256x256_adamw_heavy (multi-seed averaged, K=5 seeds).
+  - KNN: k=3, weights=distance, PCA=6.
+  - SVR: kernel=rbf, C=3.0, gamma=3, PCA=4.
+Validation: 5-fold CV (random_state=42) for model selection and OOF stacking; meta-learner trained on out-of-fold predictions of 400 training samples; final assessment on a held-out test set of 100 samples (MEE = 14.3289).
