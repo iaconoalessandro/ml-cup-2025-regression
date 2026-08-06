@@ -88,9 +88,7 @@ from any working directory. No GPU is required.
 │   ├── gridsearch_NN2.py        second generation: cosine LR, loss registry
 │   ├── ensembling.py            early stacking prototype (superseded)
 │   ├── Cup_Summary.ipynb        the full narrative analysis
-│   ├── datasets/                ML-CUP25 training and blind test sets
-│   ├── results/                 grid search logs (CSV, versioned on purpose)
-│   └── EnSIUMble_ML-CUP25-TS.csv   competition submission
+│   └── results/                 grid search logs (CSV, versioned on purpose)
 │
 ├── assets/                      generated figures + metrics.json
 ├── presentation/                slide deck + accuracy review

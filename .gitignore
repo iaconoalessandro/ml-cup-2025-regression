@@ -71,12 +71,14 @@ desktop.ini
 # ==============================================================================
 presentation/School.pptx
 
-# ==============================================================================
-# Segreti — nessuno presente oggi, ma la rete di sicurezza resta
-# ==============================================================================
+# Competition submission files (do not commit test set predictions while competition is ongoing)
+*ML-CUP25-TS.csv
+*_abstract.txt
+
 .env
 .env.*
 *.pem
 *.key
 secrets.*
 credentials.*
+
