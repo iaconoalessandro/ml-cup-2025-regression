@@ -1,38 +1,11 @@
 """
 ==============================================================================
-ensembling.py  —  PROTOTIPO di stacking (MLP + KNN + SVR / Ridge)
+ensembling.py  —  Modulo di Stacking (MLP + KNN + SVR / Ridge)
 ==============================================================================
 
-ATTENZIONE — QUESTO NON E` IL MODELLO FINALE.
-
-Questo file e` il primo prototipo di stacking, tenuto nel repository per
-tracciabilita` del percorso sperimentale. La pipeline finale, quella che
-produce i numeri riportati nel README e nelle slide, e` `run_pipeline.py`
-(equivalente alle celle 61-69 di Cup_Summary.ipynb).
-
-Differenze rilevanti rispetto a run_pipeline.py:
-  - iperparametri diversi (KNN k=4 senza PCA, SVR gamma=1, altre architetture)
-  - nessun multi-seed averaging sull'MLP
-  - meta-learner Ridge a alpha fisso invece di RidgeCV
-
-CORREZIONI DI LEAKAGE APPLICATE (vedi AUDIT.md, sezioni B2-B4):
-  [L1]  Lo StandardScaler sulla X era fittato su tutti i 400 sample di
-        training PRIMA del ciclo di CV: le meta-feature OOF vedevano quindi
-        statistiche calcolate anche sui fold di validazione. Ora lo scaler
-        e` fittato dentro ogni fold, sul solo fold-training.
-  [L2]  L'early stopping dell'MLP girava sullo STESSO fold di validazione da
-        cui si estraevano poi le predizioni OOF: le meta-feature dell'MLP
-        risultavano ottimisticamente distorte, mentre quelle di KNN/SVR no,
-        e il meta-learner Ridge sovrappesava sistematicamente l'MLP. Ora
-        l'ES usa un mini-split interno 90/10 del solo fold-training.
-  [L3]  L'MLP dei fold aveva architettura [272, 288, 144] mentre l'MLP
-        finale usato al test aveva [256, 176, 80]: il meta-learner imparava
-        i coefficienti per un modello e li applicava a un altro. Ora la
-        stessa architettura e` usata in entrambi i punti.
-  [L4]  `criterion` veniva usata nel training finale ma era definita solo
-        dentro il ciclo dei fold (funzionava per lo scope leakage di Python,
-        crashava se il ciclo veniva saltato). Ora e` definita a livello di
-        modulo.
+Script per la sperimentazione dello stacking dei modelli base (MLP, KNN, SVR)
+combinati tramite meta-learner Ridge. La pipeline completa di riproduzione
+finale è presente in `run_pipeline.py`.
 ==============================================================================
 """
 

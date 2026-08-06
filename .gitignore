@@ -60,15 +60,7 @@ desktop.ini
 *.swp
 *~
 
-# ==============================================================================
 # Presentazioni
-# ------------------------------------------------------------------------------
-# Nel repository pubblico va SOLO la versione rifinita
-# (presentation/EnSIUMble_ML_Project_2025.pptx).
-# School.pptx e` il deck consegnato per il corso: resta sul disco come
-# archivio personale ma non viene pubblicato. NON cancellarlo dal disco:
-# e` l'unico che contiene la bibliografia completa e i metadati del corso.
-# ==============================================================================
 presentation/School.pptx
 
 # Competition submission files (do not commit test set predictions while competition is ongoing)

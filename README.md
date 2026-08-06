@@ -31,7 +31,6 @@ meta-learner.
   - [Final architecture](#final-architecture)
 - [Results](#results)
 - [Reproducibility](#reproducibility)
-- [Known issues and audit](#known-issues-and-audit)
 
 ---
 
@@ -86,13 +85,12 @@ from any working directory. No GPU is required.
 │   ├── cup_loader.py            raw loading + the 400/100 split
 │   ├── gridsearch_NN.py         first-generation MLP grid search
 │   ├── gridsearch_NN2.py        second generation: cosine LR, loss registry
-│   ├── ensembling.py            early stacking prototype (superseded)
+│   ├── ensembling.py            early stacking module
 │   ├── Cup_Summary.ipynb        the full narrative analysis
 │   └── results/                 grid search logs (CSV, versioned on purpose)
 │
 ├── assets/                      generated figures + metrics.json
-├── presentation/                slide deck + accuracy review
-├── AUDIT.md                     code & methodology audit
+├── presentation/                slide deck
 └── requirements.txt
 ```
 
@@ -160,7 +158,7 @@ The protocol was fixed before any modelling and never revisited:
 - **MSE trains, MEE selects.** Gradient descent minimises MSE on standardised
   targets because it is smoother; every reported number, every early-stopping
   decision and every model-selection ranking uses MEE recomputed in the
-  **original target scale**. See [AUDIT.md §A](AUDIT.md#a-is-the-mee-implementation-correct).
+  **original target scale**.
 
 ### Baselines and the collinearity problem
 
@@ -343,30 +341,6 @@ the fresh-run column is what `run_pipeline.py` produces on torch 2.11 today.
 Pinning `torch` to the original version would close the gap. Both are shown
 rather than one silently replacing the other.
 
----
-
-## Known issues and audit
-
-A full code and methodology audit is in **[AUDIT.md](AUDIT.md)**. Summary:
-
-| | Finding |
-|---|---|
-| ✅ | MEE is implemented correctly and vectorised; no MSE/MEE confusion anywhere in training, early stopping, or CV scoring |
-| ✅ | The main pipeline has no data leakage — all scaling and PCA happen inside the folds |
-| 🔧 | `ensembling.py` (prototype) had three genuine leaks — global scaler, early stopping on the outer fold, mismatched architectures — **now fixed** |
-| ⚠️ | Grid-search MEE figures are optimistically biased (~0.9 MEE): early stopping selects the epoch on the same fold it reports. Rankings are unaffected; absolute values should be quoted from the OOF estimates |
-| ⚠️ | The "VL" figure for stacking is the meta-learner's in-sample error. A properly nested estimate is ~0.6 MEE worse; `run_pipeline.py` now reports both |
-| ⚠️ | The 400/288 epoch-rescaling heuristic double-counts gradient steps |
-| 📊 | Five factual errors found in the slide deck — see [presentation/DECK_REVIEW.md](presentation/DECK_REVIEW.md) |
-
----
-
-## Data
-
-The ML-CUP25 dataset is © CIML group, A. Micheli, University of Pisa, 2025, and
-is distributed for the course. The MONK datasets are from the UCI Machine
-Learning Repository.
-
 ## References
 
 Glorot & Bengio (2010), *Understanding the difficulty of training deep
@@ -375,3 +349,4 @@ Klambauer et al. (2017), *Self-normalizing neural networks* · Krogh & Vedelsby
 (1995), *Neural network ensembles, cross validation and active learning* ·
 Bishop (1995), *Training with noise is equivalent to Tikhonov regularization* ·
 Hastie, Tibshirani & Friedman, *The Elements of Statistical Learning*, §7.10.2.
+

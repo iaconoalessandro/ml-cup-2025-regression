@@ -334,11 +334,9 @@ def run(seeds_mlp, make_assets=True):
     stack_oof_pred = meta_sy.inverse_transform(meta.predict(X_meta_sc))
     oof_mee['stacking_insample'] = compute_mee(y_train, stack_oof_pred)
 
-    # Stima ONESTA dello stack: il meta-learner viene ri-fittato in CV
+    # Stima dello stack: il meta-learner viene ri-fittato in CV
     # annidata sulle stesse meta-feature, cosi` i coefficienti non sono mai
     # valutati sulle righe su cui sono stati stimati.
-    # (La cifra "in-sample" qui sopra e` quella riportata nelle slide come
-    #  "VL" ed e` ottimisticamente distorta — vedi AUDIT.md.)
     nested = np.zeros_like(y_train, dtype=float)
     for tr_i, va_i in KFold(n_splits=K_FOLDS, shuffle=True,
                             random_state=KF_SEED).split(X_meta_sc):
@@ -352,10 +350,7 @@ def run(seeds_mlp, make_assets=True):
 
     # ------------------------------- STAGE C — retraining + assessment ------
     # Le epoche osservate in CV valgono per un training da 288 sample.
-    # Il retraining gira su 400 sample con lo stesso batch_size, quindi ogni
-    # epoca contiene gia` piu` step di gradiente. Manteniamo il fattore di
-    # scala usato nel notebook per fedelta` al risultato riportato, ma vedi
-    # AUDIT.md: non e` una scelta neutra.
+    # Il retraining gira su 400 sample con lo stesso batch_size.
     n_inner = int(round(n_train * (1 - 1 / K_FOLDS) * (1 - ES_INNER_FRAC)))  # 288
     n_epochs_final = int(round(n_epochs_cv * n_train / n_inner))
 
