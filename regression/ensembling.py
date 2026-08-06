@@ -1,3 +1,41 @@
+"""
+==============================================================================
+ensembling.py  —  PROTOTIPO di stacking (MLP + KNN + SVR / Ridge)
+==============================================================================
+
+ATTENZIONE — QUESTO NON E` IL MODELLO FINALE.
+
+Questo file e` il primo prototipo di stacking, tenuto nel repository per
+tracciabilita` del percorso sperimentale. La pipeline finale, quella che
+produce i numeri riportati nel README e nelle slide, e` `run_pipeline.py`
+(equivalente alle celle 61-69 di Cup_Summary.ipynb).
+
+Differenze rilevanti rispetto a run_pipeline.py:
+  - iperparametri diversi (KNN k=4 senza PCA, SVR gamma=1, altre architetture)
+  - nessun multi-seed averaging sull'MLP
+  - meta-learner Ridge a alpha fisso invece di RidgeCV
+
+CORREZIONI DI LEAKAGE APPLICATE (vedi AUDIT.md, sezioni B2-B4):
+  [L1]  Lo StandardScaler sulla X era fittato su tutti i 400 sample di
+        training PRIMA del ciclo di CV: le meta-feature OOF vedevano quindi
+        statistiche calcolate anche sui fold di validazione. Ora lo scaler
+        e` fittato dentro ogni fold, sul solo fold-training.
+  [L2]  L'early stopping dell'MLP girava sullo STESSO fold di validazione da
+        cui si estraevano poi le predizioni OOF: le meta-feature dell'MLP
+        risultavano ottimisticamente distorte, mentre quelle di KNN/SVR no,
+        e il meta-learner Ridge sovrappesava sistematicamente l'MLP. Ora
+        l'ES usa un mini-split interno 90/10 del solo fold-training.
+  [L3]  L'MLP dei fold aveva architettura [272, 288, 144] mentre l'MLP
+        finale usato al test aveva [256, 176, 80]: il meta-learner imparava
+        i coefficienti per un modello e li applicava a un altro. Ora la
+        stessa architettura e` usata in entrambi i punti.
+  [L4]  `criterion` veniva usata nel training finale ma era definita solo
+        dentro il ciclo dei fold (funzionava per lo scope leakage di Python,
+        crashava se il ciclo veniva saltato). Ora e` definita a livello di
+        modulo.
+==============================================================================
+"""
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -14,6 +52,17 @@ import os
 
 # Importiamo dal loader personalizzato
 from cup_loader import MLCupLoader, seed_everything
+
+# Path ancorato al file, non alla CWD.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_TR = os.path.join(BASE_DIR, 'datasets', 'ML-CUP25-TR.csv')
+
+# [L3] Architettura unica, usata sia nei fold sia nel modello finale.
+NN_ARCH         = [272, 288, 144]
+NN_DROPOUT      = 0.04
+NN_LR           = 0.006111
+NN_WEIGHT_DECAY = 0.001087
+ES_INNER_FRAC   = 0.10          # [L2] quota del fold-train riservata all'ES
 
 # ==========================================
 # 1. SETUP E UTILS
@@ -93,14 +142,12 @@ if __name__ == "__main__":
     print(" 🚀 AVVIO ENSEMBLING STACKING & ASSESSMENT")
     print("="*50)
 
-    # 1. Caricamento Dati
-    loader = MLCupLoader('datasets/ML-CUP25-TR.csv', test_size=0.2, seed=42)
-    X_train_raw, X_test_raw, y_train_raw, y_test_raw = loader.load_and_preprocess()
+    # [L4] criterion definita a livello di script, non dentro il ciclo dei fold.
+    criterion = nn.MSELoss()
 
-    # Scaler Globale per la X (Utile per KNN e SVR che non amano i dati raw)
-    scaler_x_global = StandardScaler()
-    X_train_scaled = scaler_x_global.fit_transform(X_train_raw)
-    X_test_scaled = scaler_x_global.transform(X_test_raw)
+    # 1. Caricamento Dati
+    loader = MLCupLoader(DATASET_TR, test_size=0.2, seed=42)
+    X_train_raw, X_test_raw, y_train_raw, y_test_raw = loader.load_and_preprocess()
 
     # Matrici per salvare le predizioni Out-Of-Fold (Meta-Features)
     oof_NN = np.zeros_like(y_train_raw)
@@ -110,12 +157,17 @@ if __name__ == "__main__":
     print("\n[Fase 1/3] Generazione Meta-Features (5-Fold CV)...")
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    for fold_idx, (train_idx, val_idx) in enumerate(kf.split(X_train_scaled)):
+    for fold_idx, (train_idx, val_idx) in enumerate(kf.split(X_train_raw)):
         print(f"  -> Processando Fold {fold_idx + 1}/5...")
         seed_everything(72)
 
-        X_tr, X_va = X_train_scaled[train_idx], X_train_scaled[val_idx]
+        # [L1] Lo scaler della X e` fittato QUI, sul solo fold-training.
+        X_tr_raw_f, X_va_raw_f = X_train_raw[train_idx], X_train_raw[val_idx]
         y_tr, y_va = y_train_raw[train_idx], y_train_raw[val_idx]
+
+        scaler_x_fold = StandardScaler()
+        X_tr = scaler_x_fold.fit_transform(X_tr_raw_f)
+        X_va = scaler_x_fold.transform(X_va_raw_f)
 
         # ---- A. Modello K-NN ----
         knn = KNeighborsRegressor(n_neighbors=4, weights='distance')
@@ -128,15 +180,22 @@ if __name__ == "__main__":
         oof_SVR[val_idx] = svr.predict(X_va)
 
         # ---- C. Modello Rete Neurale ----
-        scaler_y = StandardScaler()
-        y_tr_scaled = scaler_y.fit_transform(y_tr)
+        # [L2] L'early stopping gira su un mini-split interno del fold-training.
+        # Il fold di validazione esterno non viene mai usato per scegliere
+        # l'epoca: solo cosi` la predizione OOF resta una stima onesta.
+        X_in, X_es, y_in, y_es = train_test_split(
+            X_tr, y_tr, test_size=ES_INNER_FRAC, random_state=42)
 
-        train_ds = TensorDataset(torch.tensor(X_tr, dtype=torch.float32), torch.tensor(y_tr_scaled, dtype=torch.float32))
+        scaler_y = StandardScaler()
+        y_in_scaled = scaler_y.fit_transform(y_in)
+
+        train_ds = TensorDataset(torch.tensor(X_in, dtype=torch.float32),
+                                 torch.tensor(y_in_scaled, dtype=torch.float32))
         train_dl = DataLoader(train_ds, batch_size=32, shuffle=True)
 
-        model = DynamicNet(12, 4, [272, 288, 144], dropout_rate=0.04)
-        optimizer = optim.Adam(model.parameters(), lr=0.006111, weight_decay=0.001087)
-        criterion = nn.MSELoss()
+        model = DynamicNet(12, 4, NN_ARCH, dropout_rate=NN_DROPOUT)
+        optimizer = optim.Adam(model.parameters(), lr=NN_LR,
+                               weight_decay=NN_WEIGHT_DECAY)
         early_stopping = EarlyStopping(patience=40, min_delta=1e-4)
 
         for epoch in range(1, 1000):
@@ -149,14 +208,14 @@ if __name__ == "__main__":
 
             model.eval()
             with torch.no_grad():
-                val_pred_scaled = model(torch.tensor(X_va, dtype=torch.float32)).numpy()
-                val_pred_real = scaler_y.inverse_transform(val_pred_scaled)
-                val_mee = compute_mee(y_va, val_pred_real)
-            
-            early_stopping(val_mee, model)
+                es_pred_scaled = model(torch.tensor(X_es, dtype=torch.float32)).numpy()
+                es_pred_real = scaler_y.inverse_transform(es_pred_scaled)
+                es_mee = compute_mee(y_es, es_pred_real)
+
+            early_stopping(es_mee, model)
             if early_stopping.early_stop:
                 break
-        
+
         # Salviamo la predizione OOF della miglior rete di questo fold
         model = early_stopping.restore_best_weights(model)
         model.eval()
@@ -169,6 +228,12 @@ if __name__ == "__main__":
     # -------------------------------------------------------------
     print("\n[Fase 2/3] Addestramento Modelli Base e Meta-Model su TUTTO il Train Set...")
     seed_everything(42)
+
+    # Scaler finale: fittato sui 400 sample di training, applicato al test.
+    # Il test set non entra mai nel fit (nessun leakage verso l'assessment).
+    scaler_x_final = StandardScaler()
+    X_train_scaled = scaler_x_final.fit_transform(X_train_raw)
+    X_test_scaled = scaler_x_final.transform(X_test_raw)
 
     # 1. K-NN Finale
     knn_final = KNeighborsRegressor(n_neighbors=4, weights='distance')
@@ -187,8 +252,11 @@ if __name__ == "__main__":
     train_ds_f = TensorDataset(torch.tensor(X_tr_f, dtype=torch.float32), torch.tensor(y_tr_f_scaled, dtype=torch.float32))
     train_dl_f = DataLoader(train_ds_f, batch_size=64, shuffle=True)
 
-    nn_final = DynamicNet(12, 4, [256, 176, 80], dropout_rate=0.05)
-    optimizer_f = optim.Adam(nn_final.parameters(), lr=0.008592, weight_decay=0.001765)
+    # [L3] Stessa architettura usata nei fold: il meta-learner viene applicato
+    # allo stesso modello per cui ha imparato i coefficienti.
+    nn_final = DynamicNet(12, 4, NN_ARCH, dropout_rate=NN_DROPOUT)
+    optimizer_f = optim.Adam(nn_final.parameters(), lr=NN_LR,
+                             weight_decay=NN_WEIGHT_DECAY)
     early_stopping_f = EarlyStopping(patience=40, min_delta=1e-4)
 
     for epoch in range(1, 1000):
