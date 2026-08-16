@@ -1,5 +1,7 @@
 # ML-CUP 2025 — Regression & MONK Classification
 
+**3rd of 130** — ML-CUP 2025 (Machine Learning 2025/26, University of Pisa)
+
 **Team EnSIUMble** · Machine Learning 2025/26, University of Pisa · Project type B
 Francesco Bernardini (Computer Science — AI) · Alessandro Iacono (Data Science)
 
